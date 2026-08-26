@@ -1,4 +1,5 @@
 <title>Passeio da Chimbica</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <style>
   :root{
     --ground:#fbf1e6;
@@ -166,7 +167,7 @@
   </div>
 </div>
 
-<p class="hint"><b>Setas / WASD</b> ou o <b>direcional na tela</b> para andar. Ande pelo parque e junte todos os chocolates — seu gato e o Shih Tzu te seguem pelo caminho.</p>
+<p class="hint"><b>Setas / WASD</b>, o <b>direcional na tela</b> ou <b>arraste o dedo</b> na tela para andar. Ande pelo parque e junte todos os chocolates — seu gato e o Shih Tzu te seguem pelo caminho.</p>
 <footer class="credit">um joguinho de pixels · toque na tela para começar</footer>
 
 <script>
@@ -220,32 +221,83 @@
   ];
 
   // ---------- input ----------
+  // three independent sources feed the same combined `keys` state, so
+  // releasing one (e.g. lifting a finger) never clobbers another (e.g. a held key)
   const keys = { up:false, down:false, left:false, right:false };
+  const kbdKeys = { up:false, down:false, left:false, right:false };
+  const padKeys = { up:false, down:false, left:false, right:false };
+  const dragKeys = { up:false, down:false, left:false, right:false };
+  function recomputeKeys(){
+    keys.up = kbdKeys.up || padKeys.up || dragKeys.up;
+    keys.down = kbdKeys.down || padKeys.down || dragKeys.down;
+    keys.left = kbdKeys.left || padKeys.left || dragKeys.left;
+    keys.right = kbdKeys.right || padKeys.right || dragKeys.right;
+  }
+
   const KEYMAP = {
     ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
     KeyW:'up', KeyS:'down', KeyA:'left', KeyD:'right'
   };
   window.addEventListener('keydown', (e)=>{
     const d = KEYMAP[e.code];
-    if(d){ keys[d]=true; e.preventDefault(); onAnyStart(); }
+    if(d){ kbdKeys[d]=true; recomputeKeys(); e.preventDefault(); onAnyStart(); }
   }, {passive:false});
   window.addEventListener('keyup', (e)=>{
     const d = KEYMAP[e.code];
-    if(d){ keys[d]=false; e.preventDefault(); }
+    if(d){ kbdKeys[d]=false; recomputeKeys(); e.preventDefault(); }
   }, {passive:false});
 
   const dpad = document.getElementById('dpad');
   dpad.querySelectorAll('.dbtn[data-dir]').forEach(btn=>{
     const dir = btn.dataset.dir;
-    const press = (ev)=>{ ev.preventDefault(); keys[dir]=true; btn.classList.add('active'); onAnyStart(); };
-    const release = (ev)=>{ if(ev) ev.preventDefault(); keys[dir]=false; btn.classList.remove('active'); };
+    const press = (ev)=>{ ev.preventDefault(); padKeys[dir]=true; recomputeKeys(); btn.classList.add('active'); onAnyStart(); };
+    const release = (ev)=>{ if(ev) ev.preventDefault(); padKeys[dir]=false; recomputeKeys(); btn.classList.remove('active'); };
     btn.addEventListener('pointerdown', press);
     btn.addEventListener('pointerup', release);
     btn.addEventListener('pointerleave', release);
     btn.addEventListener('pointercancel', release);
   });
 
-  canvas.addEventListener('pointerdown', ()=>{ onAnyStart(); });
+  // ---------- drag-to-move ----------
+  // touch/hold anywhere on the screen and drag: the finger's offset from
+  // where it landed steers the character, like a virtual joystick anchored
+  // to the touch point. Works alongside the d-pad and keyboard.
+  const DRAG_DEADZONE = 10; // px before a direction engages
+  let dragPointerId = null;
+  let dragStartX = 0, dragStartY = 0;
+
+  function clearDrag(){
+    dragKeys.up = dragKeys.down = dragKeys.left = dragKeys.right = false;
+    recomputeKeys();
+    dragPointerId = null;
+  }
+
+  canvas.addEventListener('pointerdown', (ev)=>{
+    onAnyStart();
+    dragPointerId = ev.pointerId;
+    dragStartX = ev.clientX;
+    dragStartY = ev.clientY;
+    canvas.setPointerCapture(ev.pointerId);
+  });
+  canvas.addEventListener('pointermove', (ev)=>{
+    if(dragPointerId === null || ev.pointerId !== dragPointerId) return;
+    const dx = ev.clientX - dragStartX;
+    const dy = ev.clientY - dragStartY;
+    dragKeys.left = dx < -DRAG_DEADZONE;
+    dragKeys.right = dx > DRAG_DEADZONE;
+    dragKeys.up = dy < -DRAG_DEADZONE;
+    dragKeys.down = dy > DRAG_DEADZONE;
+    recomputeKeys();
+  });
+  canvas.addEventListener('pointerup', (ev)=>{
+    if(ev.pointerId === dragPointerId) clearDrag();
+  });
+  canvas.addEventListener('pointercancel', (ev)=>{
+    if(ev.pointerId === dragPointerId) clearDrag();
+  });
+  canvas.addEventListener('pointerleave', (ev)=>{
+    if(ev.pointerId === dragPointerId) clearDrag();
+  });
 
   // ---------- game state ----------
   let state = 'title'; // title | play | levelComplete | win
