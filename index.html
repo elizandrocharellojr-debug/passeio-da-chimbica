@@ -448,6 +448,14 @@
     ctx.strokeStyle = '#e0b357'; ctx.lineWidth = 0.8;
     ctx.beginPath(); ctx.moveTo(-6,-1); ctx.quadraticCurveTo(0,3,6,-1); ctx.stroke();
 
+    // head + hair drawn bigger as a group, pivoted near the neck so the
+    // face grows mostly upward/outward instead of sinking into the collar
+    ctx.save();
+    const HEAD_SCALE = 1.35, HEAD_PIVOT_X = 0, HEAD_PIVOT_Y = -2;
+    ctx.translate(HEAD_PIVOT_X, HEAD_PIVOT_Y);
+    ctx.scale(HEAD_SCALE, HEAD_SCALE);
+    ctx.translate(-HEAD_PIVOT_X, -HEAD_PIVOT_Y);
+
     // hair back (dirty blonde, falling past shoulders) — drawn behind the face
     ctx.fillStyle = '#a9814f';
     ellipse(0,-17,15.5,15); ctx.fill();
@@ -478,6 +486,8 @@
     ctx.fillStyle = '#a9814f';
     rr(-13.5,-29,27,2.8,3); ctx.fill();
 
+    ctx.restore(); // undo HEAD_SCALE
+
     ctx.restore();
   }
 
@@ -486,7 +496,7 @@
     const bobY = moving ? Math.sin(bob+1)*1.6 : Math.sin(bob)*0.5;
     drawShadow(x,y+1,9);
     if(catLoaded){
-      const W = 24, H = W * (CAT_IMG.naturalHeight / CAT_IMG.naturalWidth);
+      const W = 32, H = W * (CAT_IMG.naturalHeight / CAT_IMG.naturalWidth);
       ctx.save();
       ctx.translate(x, y - H + 8 + bobY);
       ctx.scale(facing,1);
