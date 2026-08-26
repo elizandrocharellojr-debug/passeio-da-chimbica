@@ -448,10 +448,12 @@
     ctx.strokeStyle = '#e0b357'; ctx.lineWidth = 0.8;
     ctx.beginPath(); ctx.moveTo(-6,-1); ctx.quadraticCurveTo(0,3,6,-1); ctx.stroke();
 
-    // head + hair drawn bigger as a group, pivoted near the neck so the
-    // face grows mostly upward/outward instead of sinking into the collar
+    // head + hair drawn bigger as a group, pivoted exactly at the chin —
+    // the original bottom edge of the head circle, right where it meets
+    // the collar. That point stays fixed under the scale, so the face
+    // grows upward in place instead of drifting away from the body.
     ctx.save();
-    const HEAD_SCALE = 1.35, HEAD_PIVOT_X = 0, HEAD_PIVOT_Y = -2;
+    const HEAD_SCALE = 1.4, HEAD_PIVOT_X = 0, HEAD_PIVOT_Y = -1.5;
     ctx.translate(HEAD_PIVOT_X, HEAD_PIVOT_Y);
     ctx.scale(HEAD_SCALE, HEAD_SCALE);
     ctx.translate(-HEAD_PIVOT_X, -HEAD_PIVOT_Y);
